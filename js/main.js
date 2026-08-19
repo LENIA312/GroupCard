@@ -97,13 +97,19 @@ function renderThumbnails() {
     downBtn.disabled = index === state.images.length - 1;
     downBtn.addEventListener('click', () => moveImage(entry.id, 1));
 
+    const adjustBtn = document.createElement('button');
+    adjustBtn.type = 'button';
+    adjustBtn.textContent = '⛶';
+    adjustBtn.setAttribute('aria-label', '位置とサイズを調整');
+    adjustBtn.addEventListener('click', () => openAdjustModal(entry.id));
+
     const removeBtn = document.createElement('button');
     removeBtn.type = 'button';
     removeBtn.className = 'remove-btn';
     removeBtn.textContent = '×';
     removeBtn.addEventListener('click', () => removeImage(entry.id));
 
-    controls.append(upBtn, downBtn, removeBtn);
+    controls.append(upBtn, downBtn, adjustBtn, removeBtn);
     li.append(thumb, handle, controls);
     imageListEl.appendChild(li);
     attachDragHandlers(li, handle);
@@ -190,8 +196,10 @@ function addFiles(fileList) {
   toAdd.forEach((file) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
+    const id = nextId++; // assigned synchronously so selection order survives out-of-order decode/load
     img.onload = () => {
-      state.images.push({ id: nextId++, url, img });
+      state.images.push({ id, url, img, transform: defaultTransform() });
+      state.images.sort((a, b) => a.id - b.id);
       renderThumbnails();
       rebuildTimeline();
     };
@@ -266,7 +274,7 @@ function rebuildTimeline() {
     previewCtx.restore();
     return;
   }
-  state.segments = buildTimeline(state.images.map((e) => e.img), state.settings);
+  state.segments = buildTimeline(state.images, state.settings);
 }
 
 let debounceHandle = null;
@@ -387,6 +395,105 @@ copyHashtagBtn.addEventListener('click', async () => {
     // clipboard API unavailable — the hashtag text is still visible to copy manually
   }
 });
+
+// ---- per-image position / zoom adjustment modal ----
+const adjustModal = document.getElementById('adjust-modal');
+const adjustBackdrop = document.getElementById('adjust-backdrop');
+const adjustCanvas = document.getElementById('adjust-canvas');
+const adjustCtx = adjustCanvas.getContext('2d');
+const adjustZoomInput = document.getElementById('adjust-zoom');
+const adjustZoomValue = document.getElementById('adjust-zoom-value');
+const adjustResetBtn = document.getElementById('adjust-reset-btn');
+const adjustCloseBtn = document.getElementById('adjust-close-btn');
+
+let adjustingId = null;
+
+function getAdjustingEntry() {
+  return state.images.find((e) => e.id === adjustingId) || null;
+}
+
+function renderAdjustPreview() {
+  const entry = getAdjustingEntry();
+  if (!entry) return;
+  adjustCtx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+  drawCover(adjustCtx, entry.img, 0, 0, CANVAS_W, CANVAS_H, entry.transform);
+}
+
+function openAdjustModal(id) {
+  const entry = state.images.find((e) => e.id === id);
+  if (!entry) return;
+  adjustingId = id;
+  const zoomPercent = Math.round(entry.transform.scale * 100);
+  adjustZoomInput.value = String(zoomPercent);
+  adjustZoomValue.textContent = `${zoomPercent}%`;
+  adjustModal.hidden = false;
+  renderAdjustPreview();
+}
+
+function closeAdjustModal() {
+  adjustModal.hidden = true;
+  adjustingId = null;
+  rebuildTimeline();
+}
+
+adjustZoomInput.addEventListener('input', () => {
+  const entry = getAdjustingEntry();
+  if (!entry) return;
+  entry.transform.scale = Number(adjustZoomInput.value) / 100;
+  adjustZoomValue.textContent = `${adjustZoomInput.value}%`;
+  renderAdjustPreview();
+});
+
+adjustResetBtn.addEventListener('click', () => {
+  const entry = getAdjustingEntry();
+  if (!entry) return;
+  entry.transform = defaultTransform();
+  adjustZoomInput.value = '100';
+  adjustZoomValue.textContent = '100%';
+  renderAdjustPreview();
+});
+
+adjustCloseBtn.addEventListener('click', closeAdjustModal);
+adjustBackdrop.addEventListener('click', closeAdjustModal);
+
+function clamp01(v) {
+  return Math.min(1, Math.max(0, v));
+}
+
+let panState = null;
+adjustCanvas.addEventListener('pointerdown', (e) => {
+  if (!getAdjustingEntry()) return;
+  adjustCanvas.setPointerCapture(e.pointerId);
+  panState = { pointerId: e.pointerId, lastX: e.clientX, lastY: e.clientY };
+});
+
+adjustCanvas.addEventListener('pointermove', (e) => {
+  if (!panState || panState.pointerId !== e.pointerId) return;
+  const entry = getAdjustingEntry();
+  if (!entry) return;
+
+  const rect = adjustCanvas.getBoundingClientRect();
+  const dxCanvas = (e.clientX - panState.lastX) * (CANVAS_W / rect.width);
+  const dyCanvas = (e.clientY - panState.lastY) * (CANVAS_H / rect.height);
+  panState.lastX = e.clientX;
+  panState.lastY = e.clientY;
+
+  const iw = entry.img.naturalWidth;
+  const ih = entry.img.naturalHeight;
+  const baseScale = Math.max(CANVAS_W / iw, CANVAS_H / ih);
+  const effScale = baseScale * Math.max(1, entry.transform.scale || 1);
+
+  entry.transform.cx = clamp01(entry.transform.cx - dxCanvas / effScale / iw);
+  entry.transform.cy = clamp01(entry.transform.cy - dyCanvas / effScale / ih);
+  renderAdjustPreview();
+});
+
+function endPan(e) {
+  if (!panState || panState.pointerId !== e.pointerId) return;
+  panState = null;
+}
+adjustCanvas.addEventListener('pointerup', endPan);
+adjustCanvas.addEventListener('pointercancel', endPan);
 
 updateImageCount();
 rebuildTimeline();

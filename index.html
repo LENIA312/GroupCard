@@ -132,6 +132,25 @@
   </div>
 </main>
 
+<div id="adjust-modal" class="modal" hidden>
+  <div id="adjust-backdrop" class="modal-backdrop"></div>
+  <div class="modal-panel">
+    <h3>画像の位置・大きさを調整</h3>
+    <div class="canvas-wrap adjust-canvas-wrap">
+      <canvas id="adjust-canvas" width="640" height="360"></canvas>
+    </div>
+    <p class="hint">キャンバスをドラッグすると位置を調整できます。</p>
+    <div class="field">
+      <label for="adjust-zoom">ズーム <span id="adjust-zoom-value">100%</span></label>
+      <input type="range" id="adjust-zoom" min="100" max="300" step="1" value="100">
+    </div>
+    <div class="modal-actions">
+      <button id="adjust-reset-btn" type="button" class="copy-btn">リセット</button>
+      <button id="adjust-close-btn" type="button" class="share-btn">閉じる</button>
+    </div>
+  </div>
+</div>
+
 <footer class="site-footer">
   <p>すべての処理はブラウザ内で完結します。画像がサーバーに送信されることはありません。</p>
   <p class="version">v1.0.0</p>

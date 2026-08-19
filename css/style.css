@@ -363,6 +363,10 @@ body {
   gap: 0.7rem;
 }
 
+.progress-wrap[hidden] {
+  display: none;
+}
+
 .progress-wrap progress {
   flex: 1;
   height: 0.6rem;
@@ -405,6 +409,10 @@ body {
   font-size: 0.95rem;
   border: none;
   cursor: pointer;
+}
+
+.share-btn[hidden] {
+  display: none;
 }
 
 .download-link {
@@ -476,4 +484,64 @@ body {
   margin-top: 0.3rem;
   font-size: 0.72rem;
   letter-spacing: 0.02em;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modal[hidden] {
+  display: none;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 10, 15, 0.55);
+}
+
+.modal-panel {
+  position: relative;
+  background: #fff;
+  border-radius: 14px;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-panel h3 {
+  margin: 0 0 1rem;
+  font-size: 1.05rem;
+  color: var(--text);
+}
+
+.adjust-canvas-wrap {
+  cursor: grab;
+  touch-action: none;
+}
+
+.adjust-canvas-wrap:active {
+  cursor: grabbing;
+}
+
+#adjust-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1rem;
 }
