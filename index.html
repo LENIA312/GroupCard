@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>グループカードメーカー | FC・LS募集カード作成</title>
-<meta name="description" content="2〜10枚の画像から、FF14のフリーカンパニーやリンクシェル募集用のアニメーションGIFカードを作成できます。サーバー不要、ブラウザだけで完結。">
+<title>FF14 グループカードメーカー | FC・LS募集カード作成</title>
+<meta name="description" content="みんなとの思い出を、動く形で。FF14のフリーカンパニーやリンクシェル募集用のアニメーションGIFカードを2〜10枚の画像から作成できます。サーバー不要、ブラウザだけで完結。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700&family=Shippori+Mincho:wght@700&family=Kaisei+Decol:wght@700&family=Reggae+One&family=Dela+Gothic+One&family=Noto+Serif+JP:wght@900&display=swap" rel="stylesheet">
@@ -12,8 +12,8 @@
 </head>
 <body>
 <header class="site-header">
-  <h1>グループカードメーカー</h1>
-  <p class="subtitle">募集・告知用のアニメーションGIFカードを、ブラウザだけで作成</p>
+  <h1>FF14 グループカードメーカー</h1>
+  <p class="subtitle">みんなとの思い出を、動く形で</p>
 </header>
 
 <main class="layout">
@@ -90,6 +90,11 @@
           <option value="blur">ブラー（じわっと）</option>
         </select>
       </div>
+
+      <div class="field">
+        <label for="image-duration">画像の切り替わり秒数 <span id="image-duration-value">0.9秒</span></label>
+        <input type="range" id="image-duration" min="0.3" max="3" step="0.1" value="0.9">
+      </div>
     </section>
 
   </div>
@@ -129,6 +134,7 @@
 
 <footer class="site-footer">
   <p>すべての処理はブラウザ内で完結します。画像がサーバーに送信されることはありません。</p>
+  <p class="version">v1.0.0</p>
   <p class="copyright">©Pisorium ©MigiteniEdamame ©SQUARE ENIX ©FINAL FANTASY XIV</p>
 </footer>
 

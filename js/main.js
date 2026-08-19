@@ -13,6 +13,7 @@ const state = {
     fontFamily: 'M PLUS Rounded 1c',
     transitionType: 'fade',
     textAnimStyle: 'fade',
+    imageHoldMs: 900,
   },
 };
 
@@ -32,6 +33,8 @@ const textColorInput = document.getElementById('text-color');
 const fontSelect = document.getElementById('font-select');
 const transitionSelect = document.getElementById('transition-select');
 const textAnimSelect = document.getElementById('text-anim-select');
+const imageDurationInput = document.getElementById('image-duration');
+const imageDurationValue = document.getElementById('image-duration-value');
 
 const previewCanvas = document.getElementById('preview-canvas');
 const previewCtx = previewCanvas.getContext('2d');
@@ -242,6 +245,7 @@ function readSettings() {
   state.settings.fontFamily = fontSelect.value;
   state.settings.transitionType = transitionSelect.value;
   state.settings.textAnimStyle = textAnimSelect.value;
+  state.settings.imageHoldMs = Math.round(Number(imageDurationInput.value) * 1000);
 }
 
 function rebuildTimeline() {
@@ -281,6 +285,10 @@ overlayOpacityInput.addEventListener('input', () => {
 });
 [fontSelect, transitionSelect, textAnimSelect].forEach((el) => {
   el.addEventListener('change', scheduleRebuild);
+});
+imageDurationInput.addEventListener('input', () => {
+  imageDurationValue.textContent = `${Number(imageDurationInput.value).toFixed(1)}秒`;
+  scheduleRebuild();
 });
 
 function previewLoop(ts) {

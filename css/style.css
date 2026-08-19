@@ -460,8 +460,17 @@ body {
   padding: 1.5rem 1rem 2.5rem;
 }
 
+.site-footer .version {
+  margin-top: 0.6rem;
+  margin-bottom: 0;
+  font-size: 0.72rem;
+  color: var(--accent-dark);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
 .site-footer .copyright {
-  margin-top: 0.4rem;
+  margin-top: 0.3rem;
   font-size: 0.72rem;
   letter-spacing: 0.02em;
 }
