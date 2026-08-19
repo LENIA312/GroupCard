@@ -170,11 +170,13 @@ function drawWatermark(ctx, w, h) {
   ctx.restore();
 }
 
+// These cached per-image canvases stay watermark-free: they also serve as the
+// source/target for image-transitions, and baking the watermark in here would
+// make it slide/zoom/flip along with the transition instead of staying put.
 function renderPlainCanvas(entry) {
   const c = createCanvas(CANVAS_W, CANVAS_H);
   const ctx = c.getContext('2d');
   drawCover(ctx, entry.img, 0, 0, CANVAS_W, CANVAS_H, entry.transform);
-  drawWatermark(ctx, CANVAS_W, CANVAS_H);
   return c;
 }
 
@@ -183,7 +185,6 @@ function renderOverlayCanvas(entry, settings) {
   const ctx = c.getContext('2d');
   drawCover(ctx, entry.img, 0, 0, CANVAS_W, CANVAS_H, entry.transform);
   drawTitleOverlay(ctx, CANVAS_W, CANVAS_H, settings, 1);
-  drawWatermark(ctx, CANVAS_W, CANVAS_H);
   return c;
 }
 
@@ -294,8 +295,10 @@ function renderAtTime(ctx, segments, tMs, settings) {
         const progress = seg.direction === 'in' ? raw : 1 - raw;
         drawCover(ctx, seg.entry.img, 0, 0, CANVAS_W, CANVAS_H, seg.entry.transform);
         drawTitleOverlay(ctx, CANVAS_W, CANVAS_H, settings, progress);
-        drawWatermark(ctx, CANVAS_W, CANVAS_H);
       }
+      // Drawn last, outside any transition's transform/clip, so the credit
+      // stays fixed in place instead of animating with the image beneath it.
+      drawWatermark(ctx, CANVAS_W, CANVAS_H);
       return;
     }
     accum += seg.duration;
@@ -306,7 +309,15 @@ function buildGifFrames(segments, settings) {
   const frames = [];
   for (const seg of segments) {
     if (seg.type === 'hold') {
-      frames.push({ canvas: seg.canvas, delay: seg.duration });
+      // Copy onto a fresh canvas rather than drawing on seg.canvas directly —
+      // that cached canvas is also reused as an image-transition endpoint, so
+      // baking the watermark into it would carry the watermark into the
+      // transition's slide/zoom/flip math too.
+      const canvas = createCanvas(CANVAS_W, CANVAS_H);
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(seg.canvas, 0, 0);
+      drawWatermark(ctx, CANVAS_W, CANVAS_H);
+      frames.push({ canvas, delay: seg.duration });
       continue;
     }
     const delay = Math.round(seg.duration / TRANSITION_STEPS);
@@ -320,8 +331,8 @@ function buildGifFrames(segments, settings) {
         const progress = seg.direction === 'in' ? raw : 1 - raw;
         drawCover(ctx, seg.entry.img, 0, 0, CANVAS_W, CANVAS_H, seg.entry.transform);
         drawTitleOverlay(ctx, CANVAS_W, CANVAS_H, settings, progress);
-        drawWatermark(ctx, CANVAS_W, CANVAS_H);
       }
+      drawWatermark(ctx, CANVAS_W, CANVAS_H);
       frames.push({ canvas, delay });
     }
   }
