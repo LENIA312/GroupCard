@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>グループカードメーカー | FC・LS募集カード作成</title>
+<meta name="description" content="2〜10枚の画像から、FF14のフリーカンパニーやリンクシェル募集用のアニメーションGIFカードを作成できます。サーバー不要、ブラウザだけで完結。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700&family=Shippori+Mincho:wght@700&family=Kaisei+Decol:wght@700&family=Reggae+One&family=Dela+Gothic+One&family=Noto+Serif+JP:wght@900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="site-header">
+  <h1>グループカードメーカー</h1>
+  <p class="subtitle">募集・告知用のアニメーションGIFカードを、ブラウザだけで作成</p>
+</header>
+
+<main class="layout">
+  <div class="column column-form">
+
+    <section class="panel" id="upload-section">
+      <h2><span class="step">1</span>画像を選択</h2>
+      <p class="hint">2〜10枚の画像をアップロードしてください。各画像は自動で16:9にトリミングされます。</p>
+
+      <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="画像をドロップまたはクリックして選択">
+        <p>ここに画像をドラッグ&ドロップ<br>またはクリックして選択</p>
+        <input type="file" id="file-input" accept="image/*" multiple hidden>
+      </div>
+
+      <p id="upload-msg" class="msg" aria-live="polite"></p>
+      <p id="image-count" class="count">0 / 10 枚</p>
+      <ul id="image-list" class="image-list"></ul>
+    </section>
+
+    <section class="panel" id="settings-section">
+      <h2><span class="step">2</span>デザイン設定</h2>
+
+      <div class="field">
+        <label for="title-input">グループ名・タイトル</label>
+        <input type="text" id="title-input" maxlength="30" placeholder="例）黒衣の団">
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="overlay-color">オーバーレイ色</label>
+          <input type="color" id="overlay-color" value="#1a1030">
+        </div>
+        <div class="field">
+          <label for="text-color">文字色</label>
+          <input type="color" id="text-color" value="#f4e7c9">
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="overlay-opacity">オーバーレイの濃さ <span id="overlay-opacity-value">55%</span></label>
+        <input type="range" id="overlay-opacity" min="0" max="100" value="55">
+      </div>
+
+      <div class="field">
+        <label for="font-select">フォント</label>
+        <select id="font-select">
+          <option value="M PLUS Rounded 1c" selected>丸ゴシック（M PLUS Rounded 1c）</option>
+          <option value="Shippori Mincho">明朝（Shippori Mincho）</option>
+          <option value="Kaisei Decol">装飾明朝（Kaisei Decol）</option>
+          <option value="Noto Serif JP">クラシック明朝（Noto Serif JP）</option>
+          <option value="Reggae One">ポップ（Reggae One）</option>
+          <option value="Dela Gothic One">インパクト（Dela Gothic One）</option>
+        </select>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="column column-preview">
+    <section class="panel" id="preview-section">
+      <h2><span class="step">3</span>プレビュー</h2>
+      <div class="canvas-wrap">
+        <canvas id="preview-canvas" width="640" height="360"></canvas>
+      </div>
+    </section>
+
+    <section class="panel" id="export-section">
+      <h2><span class="step">4</span>GIFを書き出す</h2>
+      <button id="generate-btn" disabled>GIFを作成</button>
+
+      <div id="progress-wrap" class="progress-wrap" hidden>
+        <progress id="progress-bar" value="0" max="1"></progress>
+        <span id="progress-text">0%</span>
+      </div>
+
+      <div id="result-wrap" class="result-wrap" hidden>
+        <img id="result-gif" alt="生成されたグループカード">
+        <a id="download-link" class="download-link" download>GIFをダウンロード</a>
+        <p class="hint">ダウンロードした画像はそのままXなどのSNSに投稿できます。</p>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <p>すべての処理はブラウザ内で完結します。画像がサーバーに送信されることはありません。</p>
+</footer>
+
+<script src="js/vendor/gif.js"></script>
+<script src="js/render.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
