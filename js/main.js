@@ -1,6 +1,7 @@
 const MAX_IMAGES = 10;
 const MIN_IMAGES = 2;
 const SHARE_HASHTAGS = '#FFXIV #FF14 #FF14グループカード';
+const SHARE_TEXT = `${SHARE_HASHTAGS}\n${location.origin}`;
 
 const state = {
   images: [], // { id, url, img }
@@ -48,6 +49,8 @@ const resultGif = document.getElementById('result-gif');
 const downloadLink = document.getElementById('download-link');
 const shareBtn = document.getElementById('share-btn');
 const copyHashtagBtn = document.getElementById('copy-hashtag-btn');
+const hashtagTextEl = document.getElementById('hashtag-text');
+hashtagTextEl.textContent = SHARE_TEXT;
 
 let lastGifBlob = null;
 let lastGifFilename = '';
@@ -366,7 +369,7 @@ shareBtn.addEventListener('click', async () => {
   if (!lastGifBlob) return;
   const file = new File([lastGifBlob], lastGifFilename, { type: 'image/gif' });
   try {
-    await navigator.share({ files: [file], text: SHARE_HASHTAGS });
+    await navigator.share({ files: [file], text: SHARE_TEXT });
   } catch (e) {
     // user cancelled the share sheet, or the browser rejected it — nothing to do
   }
@@ -374,7 +377,7 @@ shareBtn.addEventListener('click', async () => {
 
 copyHashtagBtn.addEventListener('click', async () => {
   try {
-    await navigator.clipboard.writeText(SHARE_HASHTAGS);
+    await navigator.clipboard.writeText(SHARE_TEXT);
     const original = copyHashtagBtn.textContent;
     copyHashtagBtn.textContent = 'コピーしました';
     setTimeout(() => {
