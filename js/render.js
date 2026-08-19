@@ -1,9 +1,20 @@
-const CANVAS_W = 640;
-const CANVAS_H = 360;
+const ORIENTATIONS = {
+  landscape: { w: 640, h: 360 },
+  portrait: { w: 360, h: 640 },
+};
+
+let CANVAS_W = ORIENTATIONS.landscape.w;
+let CANVAS_H = ORIENTATIONS.landscape.h;
 const HOLD_OVERLAY_MS = 1600;
 const HOLD_IMAGE_MS = 900;
 const TRANSITION_MS = 500;
 const TRANSITION_STEPS = 8;
+
+function setCanvasOrientation(orientation) {
+  const size = ORIENTATIONS[orientation] || ORIENTATIONS.landscape;
+  CANVAS_W = size.w;
+  CANVAS_H = size.h;
+}
 
 function createCanvas(w, h) {
   const c = document.createElement('canvas');
@@ -148,14 +159,23 @@ function drawTitleOverlay(ctx, w, h, settings, progress) {
 
 function drawWatermark(ctx, w, h) {
   const text = '© SQUARE ENIX © FINAL FANTASY XIV';
-  const fontSize = Math.max(9, Math.round(h * 0.032));
+  // Sized off the shorter side so it stays legible without overflowing the
+  // narrower dimension in portrait orientation.
+  let fontSize = Math.max(9, Math.round(Math.min(w, h) * 0.032));
+  const paddingX = Math.min(w, h) * 0.02;
+  const paddingY = Math.min(w, h) * 0.025;
+  const maxTextWidth = w - paddingX * 2;
+
   ctx.save();
   ctx.font = `${fontSize}px sans-serif`;
+  let metrics = ctx.measureText(text);
+  if (metrics.width > maxTextWidth) {
+    fontSize = Math.max(7, Math.floor(fontSize * (maxTextWidth / metrics.width)));
+    ctx.font = `${fontSize}px sans-serif`;
+    metrics = ctx.measureText(text);
+  }
   ctx.textAlign = 'right';
   ctx.textBaseline = 'bottom';
-  const paddingX = w * 0.02;
-  const paddingY = h * 0.025;
-  const metrics = ctx.measureText(text);
   const boxPadX = 6;
   const boxPadY = 3;
   ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';

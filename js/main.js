@@ -6,6 +6,7 @@ const SHARE_TEXT = `${SHARE_HASHTAGS}\n${location.origin}`;
 const state = {
   images: [], // { id, url, img }
   segments: [],
+  orientation: 'landscape',
   settings: {
     title: '',
     overlayColor: '#1a1030',
@@ -26,6 +27,8 @@ const uploadMsg = document.getElementById('upload-msg');
 const imageCountEl = document.getElementById('image-count');
 const imageListEl = document.getElementById('image-list');
 
+const orientationLandscapeBtn = document.getElementById('orientation-landscape');
+const orientationPortraitBtn = document.getElementById('orientation-portrait');
 const titleInput = document.getElementById('title-input');
 const overlayColorInput = document.getElementById('overlay-color');
 const overlayOpacityInput = document.getElementById('overlay-opacity');
@@ -301,6 +304,24 @@ imageDurationInput.addEventListener('input', () => {
   imageDurationValue.textContent = `${Number(imageDurationInput.value).toFixed(1)}秒`;
   scheduleRebuild();
 });
+
+function setOrientation(mode) {
+  if (mode === state.orientation) return;
+  state.orientation = mode;
+  setCanvasOrientation(mode);
+  previewCanvas.width = CANVAS_W;
+  previewCanvas.height = CANVAS_H;
+  adjustCanvas.width = CANVAS_W;
+  adjustCanvas.height = CANVAS_H;
+  document.body.classList.toggle('orientation-portrait', mode === 'portrait');
+  orientationLandscapeBtn.classList.toggle('is-active', mode === 'landscape');
+  orientationPortraitBtn.classList.toggle('is-active', mode === 'portrait');
+  rebuildTimeline();
+  if (adjustingId != null) renderAdjustPreview();
+}
+
+orientationLandscapeBtn.addEventListener('click', () => setOrientation('landscape'));
+orientationPortraitBtn.addEventListener('click', () => setOrientation('portrait'));
 
 function previewLoop(ts) {
   if (state.segments.length > 0) {

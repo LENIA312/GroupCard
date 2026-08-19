@@ -21,7 +21,7 @@
 
     <section class="panel" id="upload-section">
       <h2><span class="step">1</span>画像を選択</h2>
-      <p class="hint">2〜10枚の画像をアップロードしてください。各画像は自動で16:9にトリミングされます。サムネイルの「⠿」をドラッグすると並び順を変更できます。</p>
+      <p class="hint">2〜10枚の画像をアップロードしてください。各画像は選択した向き（デフォルトは16:9）に自動でトリミングされます。サムネイルの「⠿」をドラッグすると並び順を変更できます。</p>
 
       <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="画像をドロップまたはクリックして選択">
         <p>ここに画像をドラッグ&ドロップ<br>またはクリックして選択</p>
@@ -35,6 +35,14 @@
 
     <section class="panel" id="settings-section">
       <h2><span class="step">2</span>デザイン設定</h2>
+
+      <div class="field">
+        <label>向き</label>
+        <div class="orientation-toggle" role="group" aria-label="カードの向き">
+          <button type="button" id="orientation-landscape" class="orientation-btn is-active" data-orientation="landscape">横向き（16:9）</button>
+          <button type="button" id="orientation-portrait" class="orientation-btn" data-orientation="portrait">縦向き（9:16）</button>
+        </div>
+      </div>
 
       <div class="field">
         <label for="title-input">グループ名・タイトル</label>

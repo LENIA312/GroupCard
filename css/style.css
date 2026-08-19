@@ -193,6 +193,37 @@ body {
   object-fit: cover;
 }
 
+body.orientation-portrait .image-item img {
+  aspect-ratio: 9 / 16;
+}
+
+.orientation-toggle {
+  display: flex;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.orientation-btn {
+  flex: 1;
+  padding: 0.55rem 0.5rem;
+  border: none;
+  background: #fff;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.orientation-btn + .orientation-btn {
+  border-left: 1px solid var(--panel-border);
+}
+
+.orientation-btn.is-active {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
 .drag-handle {
   position: absolute;
   top: 0.3rem;
