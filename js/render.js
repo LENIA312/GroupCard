@@ -247,7 +247,6 @@ function drawTransitionFrame(ctx, from, to, p, type) {
 function buildTimeline(images, settings) {
   const plainCanvases = images.map((img) => renderPlainCanvas(img));
   const titleStartCanvas = renderOverlayCanvas(images[0], settings);
-  const titleEndCanvas = renderOverlayCanvas(images[images.length - 1], settings);
 
   const segments = [];
   segments.push({ type: 'hold', canvas: titleStartCanvas, duration: HOLD_OVERLAY_MS });
@@ -264,14 +263,6 @@ function buildTimeline(images, settings) {
     });
     segments.push({ type: 'hold', canvas: plainCanvases[i], duration: HOLD_IMAGE_MS });
   }
-
-  segments.push({
-    type: 'title-transition',
-    img: images[images.length - 1],
-    direction: 'in',
-    duration: TRANSITION_MS,
-  });
-  segments.push({ type: 'hold', canvas: titleEndCanvas, duration: HOLD_OVERLAY_MS });
 
   return segments;
 }

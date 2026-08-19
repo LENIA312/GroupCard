@@ -1,5 +1,6 @@
 const MAX_IMAGES = 10;
 const MIN_IMAGES = 2;
+const SHARE_HASHTAGS = '#FFXIV #FF14 #FF14グループカード';
 
 const state = {
   images: [], // { id, url, img }
@@ -42,6 +43,11 @@ const progressText = document.getElementById('progress-text');
 const resultWrap = document.getElementById('result-wrap');
 const resultGif = document.getElementById('result-gif');
 const downloadLink = document.getElementById('download-link');
+const shareBtn = document.getElementById('share-btn');
+const copyHashtagBtn = document.getElementById('copy-hashtag-btn');
+
+let lastGifBlob = null;
+let lastGifFilename = '';
 
 function setUploadMsg(text) {
   uploadMsg.textContent = text || '';
@@ -329,9 +335,46 @@ generateBtn.addEventListener('click', async () => {
     resultWrap.hidden = false;
     progressWrap.hidden = true;
     generateBtn.disabled = state.images.length < MIN_IMAGES;
+
+    lastGifBlob = blob;
+    lastGifFilename = downloadLink.download;
+    updateShareButtonVisibility();
   });
 
   gif.render();
+});
+
+function updateShareButtonVisibility() {
+  if (!lastGifBlob) {
+    shareBtn.hidden = true;
+    return;
+  }
+  const file = new File([lastGifBlob], lastGifFilename, { type: 'image/gif' });
+  const canShareFiles = !!(navigator.canShare && navigator.canShare({ files: [file] }));
+  shareBtn.hidden = !canShareFiles;
+}
+
+shareBtn.addEventListener('click', async () => {
+  if (!lastGifBlob) return;
+  const file = new File([lastGifBlob], lastGifFilename, { type: 'image/gif' });
+  try {
+    await navigator.share({ files: [file], text: SHARE_HASHTAGS });
+  } catch (e) {
+    // user cancelled the share sheet, or the browser rejected it — nothing to do
+  }
+});
+
+copyHashtagBtn.addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(SHARE_HASHTAGS);
+    const original = copyHashtagBtn.textContent;
+    copyHashtagBtn.textContent = 'コピーしました';
+    setTimeout(() => {
+      copyHashtagBtn.textContent = original;
+    }, 1500);
+  } catch (e) {
+    // clipboard API unavailable — the hashtag text is still visible to copy manually
+  }
 });
 
 updateImageCount();

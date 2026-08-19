@@ -387,19 +387,70 @@ body {
   border: 1px solid var(--panel-border);
 }
 
-.download-link {
-  display: inline-block;
+.result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.7rem;
   margin-top: 0.9rem;
+}
+
+.download-link,
+.share-btn {
+  display: inline-block;
   padding: 0.6rem 1.4rem;
   border-radius: 8px;
-  background: var(--text);
-  color: #fff;
   text-decoration: none;
   font-weight: 600;
+  font-size: 0.95rem;
+  border: none;
+  cursor: pointer;
+}
+
+.download-link {
+  background: var(--text);
+  color: #fff;
 }
 
 .download-link:hover {
   background: var(--accent-dark);
+}
+
+.share-btn {
+  background: var(--accent);
+  color: #fff;
+}
+
+.share-btn:hover {
+  background: var(--accent-dark);
+}
+
+.hashtag-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.hashtag-row span {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.copy-btn {
+  border: 1px solid var(--panel-border);
+  background: #fff;
+  color: var(--accent-dark);
+  border-radius: 6px;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.copy-btn:hover {
+  background: var(--accent-soft);
 }
 
 .site-footer {
