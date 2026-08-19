@@ -1,3 +1,4 @@
 node_modules/
+.wrangler/
 desktop.ini
 Thumbs.db

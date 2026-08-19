@@ -2,7 +2,7 @@ const CANVAS_W = 640;
 const CANVAS_H = 360;
 const HOLD_OVERLAY_MS = 1600;
 const HOLD_IMAGE_MS = 900;
-const TRANSITION_MS = 450;
+const TRANSITION_MS = 500;
 const TRANSITION_STEPS = 8;
 
 function createCanvas(w, h) {
@@ -60,18 +60,53 @@ function wrapLines(ctx, text, maxWidth) {
   return lines;
 }
 
-function drawOverlayText(ctx, w, h, settings) {
+function applyTextAnimStyle(ctx, w, h, style, progress) {
+  switch (style) {
+    case 'slide': {
+      ctx.globalAlpha = progress;
+      ctx.translate(0, (1 - progress) * h * 0.22);
+      break;
+    }
+    case 'pop': {
+      ctx.globalAlpha = progress;
+      const scale = 0.55 + 0.45 * progress;
+      ctx.translate(w / 2, h / 2);
+      ctx.scale(scale, scale);
+      ctx.translate(-w / 2, -h / 2);
+      break;
+    }
+    case 'blur': {
+      ctx.globalAlpha = progress;
+      const blurPx = (1 - progress) * 14;
+      if (blurPx > 0.05) ctx.filter = `blur(${blurPx.toFixed(1)}px)`;
+      break;
+    }
+    case 'fade':
+    default: {
+      ctx.globalAlpha = progress;
+      break;
+    }
+  }
+}
+
+// progress: 0 = fully hidden, 1 = fully shown. Draws the text backdrop + title
+// on top of whatever is already on the canvas (the cover-fit photo).
+function drawTitleOverlay(ctx, w, h, settings, progress) {
   ctx.save();
-  ctx.fillStyle = hexToRgba(settings.overlayColor, settings.overlayOpacity);
+  const backdropAlpha = settings.overlayOpacity * progress;
+  ctx.fillStyle = hexToRgba(settings.overlayColor, backdropAlpha);
   ctx.fillRect(0, 0, w, h);
 
   const pad = Math.round(h * 0.09);
-  ctx.strokeStyle = hexToRgba(settings.textColor, 0.55);
+  ctx.strokeStyle = hexToRgba(settings.textColor, 0.55 * progress);
   ctx.lineWidth = Math.max(1, h * 0.004);
   ctx.strokeRect(pad, pad, w - pad * 2, h - pad * 2);
 
   const title = (settings.title || '').trim();
-  if (title) {
+  if (title && progress > 0.001) {
+    ctx.save();
+    applyTextAnimStyle(ctx, w, h, settings.textAnimStyle, progress);
+
     const fontSize = Math.round(h * 0.15);
     ctx.font = `${fontSize}px "${settings.fontFamily}"`;
     ctx.fillStyle = settings.textColor;
@@ -91,6 +126,7 @@ function drawOverlayText(ctx, w, h, settings) {
 
     const ruleWidth = Math.min(w * 0.3, maxWidth * 0.5);
     ctx.shadowBlur = 0;
+    ctx.filter = 'none';
     ctx.strokeStyle = hexToRgba(settings.textColor, 0.7);
     ctx.lineWidth = Math.max(1, h * 0.006);
     const ruleY1 = startY - lineHeight * 0.75;
@@ -101,13 +137,40 @@ function drawOverlayText(ctx, w, h, settings) {
       ctx.lineTo(w / 2 + ruleWidth / 2, y);
       ctx.stroke();
     });
+    ctx.restore();
   }
+  ctx.restore();
+}
+
+function drawWatermark(ctx, w, h) {
+  const text = '© SQUARE ENIX © FINAL FANTASY XIV';
+  const fontSize = Math.max(9, Math.round(h * 0.032));
+  ctx.save();
+  ctx.font = `${fontSize}px sans-serif`;
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'bottom';
+  const paddingX = w * 0.02;
+  const paddingY = h * 0.025;
+  const metrics = ctx.measureText(text);
+  const boxPadX = 6;
+  const boxPadY = 3;
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+  ctx.fillRect(
+    w - paddingX - metrics.width - boxPadX * 2,
+    h - paddingY - fontSize - boxPadY,
+    metrics.width + boxPadX * 2,
+    fontSize + boxPadY * 2
+  );
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+  ctx.fillText(text, w - paddingX, h - paddingY);
   ctx.restore();
 }
 
 function renderPlainCanvas(img) {
   const c = createCanvas(CANVAS_W, CANVAS_H);
-  drawCover(c.getContext('2d'), img, 0, 0, CANVAS_W, CANVAS_H);
+  const ctx = c.getContext('2d');
+  drawCover(ctx, img, 0, 0, CANVAS_W, CANVAS_H);
+  drawWatermark(ctx, CANVAS_W, CANVAS_H);
   return c;
 }
 
@@ -115,26 +178,101 @@ function renderOverlayCanvas(img, settings) {
   const c = createCanvas(CANVAS_W, CANVAS_H);
   const ctx = c.getContext('2d');
   drawCover(ctx, img, 0, 0, CANVAS_W, CANVAS_H);
-  drawOverlayText(ctx, CANVAS_W, CANVAS_H, settings);
+  drawTitleOverlay(ctx, CANVAS_W, CANVAS_H, settings, 1);
+  drawWatermark(ctx, CANVAS_W, CANVAS_H);
   return c;
 }
 
-function buildKeyframes(images, settings) {
-  const frames = [];
-  frames.push(renderOverlayCanvas(images[0], settings));
-  images.forEach((img) => frames.push(renderPlainCanvas(img)));
-  frames.push(renderOverlayCanvas(images[images.length - 1], settings));
-  return frames;
+// Renders one frame of an image-to-image transition (p: 0..1) into ctx.
+function drawTransitionFrame(ctx, from, to, p, type) {
+  ctx.save();
+  ctx.globalAlpha = 1;
+  switch (type) {
+    case 'slide': {
+      const dx = CANVAS_W * p;
+      ctx.drawImage(from, -dx, 0);
+      ctx.drawImage(to, CANVAS_W - dx, 0);
+      break;
+    }
+    case 'wipe': {
+      ctx.drawImage(from, 0, 0);
+      ctx.beginPath();
+      ctx.rect(0, 0, CANVAS_W * p, CANVAS_H);
+      ctx.clip();
+      ctx.drawImage(to, 0, 0);
+      break;
+    }
+    case 'zoom': {
+      ctx.drawImage(from, 0, 0);
+      ctx.globalAlpha = p;
+      const scale = 1.15 - 0.15 * p;
+      const sw = CANVAS_W * scale;
+      const sh = CANVAS_H * scale;
+      ctx.drawImage(to, (CANVAS_W - sw) / 2, (CANVAS_H - sh) / 2, sw, sh);
+      break;
+    }
+    case 'flip': {
+      const half = p < 0.5;
+      const s = Math.max(0.02, half ? 1 - p / 0.5 : (p - 0.5) / 0.5);
+      ctx.translate(CANVAS_W / 2, 0);
+      ctx.scale(s, 1);
+      ctx.translate(-CANVAS_W / 2, 0);
+      ctx.drawImage(half ? from : to, 0, 0);
+      break;
+    }
+    case 'iris': {
+      ctx.drawImage(from, 0, 0);
+      const maxR = Math.hypot(CANVAS_W / 2, CANVAS_H / 2);
+      ctx.beginPath();
+      ctx.arc(CANVAS_W / 2, CANVAS_H / 2, maxR * p, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.drawImage(to, 0, 0);
+      break;
+    }
+    case 'fade':
+    default: {
+      ctx.drawImage(from, 0, 0);
+      ctx.globalAlpha = p;
+      ctx.drawImage(to, 0, 0);
+      break;
+    }
+  }
+  ctx.restore();
 }
 
-function buildSegments(keyframes) {
+// Builds the full animation timeline as a list of segments:
+//  - { type:'hold', canvas, duration }
+//  - { type:'image-transition', from, to, duration, transitionType }
+//  - { type:'title-transition', img, direction:'in'|'out', duration }
+function buildTimeline(images, settings) {
+  const plainCanvases = images.map((img) => renderPlainCanvas(img));
+  const titleStartCanvas = renderOverlayCanvas(images[0], settings);
+  const titleEndCanvas = renderOverlayCanvas(images[images.length - 1], settings);
+
   const segments = [];
-  segments.push({ type: 'hold', canvas: keyframes[0], duration: HOLD_OVERLAY_MS });
-  for (let i = 1; i < keyframes.length; i++) {
-    segments.push({ type: 'transition', from: keyframes[i - 1], to: keyframes[i], duration: TRANSITION_MS });
-    const isEdge = i === keyframes.length - 1;
-    segments.push({ type: 'hold', canvas: keyframes[i], duration: isEdge ? HOLD_OVERLAY_MS : HOLD_IMAGE_MS });
+  segments.push({ type: 'hold', canvas: titleStartCanvas, duration: HOLD_OVERLAY_MS });
+  segments.push({ type: 'title-transition', img: images[0], direction: 'out', duration: TRANSITION_MS });
+  segments.push({ type: 'hold', canvas: plainCanvases[0], duration: HOLD_IMAGE_MS });
+
+  for (let i = 1; i < images.length; i++) {
+    segments.push({
+      type: 'image-transition',
+      from: plainCanvases[i - 1],
+      to: plainCanvases[i],
+      duration: TRANSITION_MS,
+      transitionType: settings.transitionType,
+    });
+    segments.push({ type: 'hold', canvas: plainCanvases[i], duration: HOLD_IMAGE_MS });
   }
+
+  segments.push({
+    type: 'title-transition',
+    img: images[images.length - 1],
+    direction: 'in',
+    duration: TRANSITION_MS,
+  });
+  segments.push({ type: 'hold', canvas: titleEndCanvas, duration: HOLD_OVERLAY_MS });
+
   return segments;
 }
 
@@ -142,7 +280,7 @@ function totalDuration(segments) {
   return segments.reduce((sum, s) => sum + s.duration, 0);
 }
 
-function renderAtTime(ctx, segments, tMs) {
+function renderAtTime(ctx, segments, tMs, settings) {
   const total = totalDuration(segments);
   if (total <= 0) return;
   const t = tMs % total;
@@ -152,12 +290,14 @@ function renderAtTime(ctx, segments, tMs) {
       const local = t - accum;
       if (seg.type === 'hold') {
         ctx.drawImage(seg.canvas, 0, 0);
-      } else {
-        const p = local / seg.duration;
-        ctx.drawImage(seg.from, 0, 0);
-        ctx.globalAlpha = p;
-        ctx.drawImage(seg.to, 0, 0);
-        ctx.globalAlpha = 1;
+      } else if (seg.type === 'image-transition') {
+        drawTransitionFrame(ctx, seg.from, seg.to, local / seg.duration, seg.transitionType);
+      } else if (seg.type === 'title-transition') {
+        const raw = local / seg.duration;
+        const progress = seg.direction === 'in' ? raw : 1 - raw;
+        drawCover(ctx, seg.img, 0, 0, CANVAS_W, CANVAS_H);
+        drawTitleOverlay(ctx, CANVAS_W, CANVAS_H, settings, progress);
+        drawWatermark(ctx, CANVAS_W, CANVAS_H);
       }
       return;
     }
@@ -165,29 +305,27 @@ function renderAtTime(ctx, segments, tMs) {
   }
 }
 
-function blendCanvas(from, to, p) {
-  const c = createCanvas(CANVAS_W, CANVAS_H);
-  const ctx = c.getContext('2d');
-  ctx.drawImage(from, 0, 0);
-  ctx.globalAlpha = p;
-  ctx.drawImage(to, 0, 0);
-  ctx.globalAlpha = 1;
-  return c;
-}
-
-function buildGifFrames(segments) {
+function buildGifFrames(segments, settings) {
   const frames = [];
   for (const seg of segments) {
     if (seg.type === 'hold') {
       frames.push({ canvas: seg.canvas, delay: seg.duration });
-    } else {
-      for (let s = 1; s < TRANSITION_STEPS; s++) {
-        const p = s / TRANSITION_STEPS;
-        frames.push({
-          canvas: blendCanvas(seg.from, seg.to, p),
-          delay: Math.round(seg.duration / TRANSITION_STEPS),
-        });
+      continue;
+    }
+    const delay = Math.round(seg.duration / TRANSITION_STEPS);
+    for (let s = 1; s < TRANSITION_STEPS; s++) {
+      const canvas = createCanvas(CANVAS_W, CANVAS_H);
+      const ctx = canvas.getContext('2d');
+      if (seg.type === 'image-transition') {
+        drawTransitionFrame(ctx, seg.from, seg.to, s / TRANSITION_STEPS, seg.transitionType);
+      } else if (seg.type === 'title-transition') {
+        const raw = s / TRANSITION_STEPS;
+        const progress = seg.direction === 'in' ? raw : 1 - raw;
+        drawCover(ctx, seg.img, 0, 0, CANVAS_W, CANVAS_H);
+        drawTitleOverlay(ctx, CANVAS_W, CANVAS_H, settings, progress);
+        drawWatermark(ctx, CANVAS_W, CANVAS_H);
       }
+      frames.push({ canvas, delay });
     }
   }
   return frames;

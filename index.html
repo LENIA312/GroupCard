@@ -21,7 +21,7 @@
 
     <section class="panel" id="upload-section">
       <h2><span class="step">1</span>画像を選択</h2>
-      <p class="hint">2〜10枚の画像をアップロードしてください。各画像は自動で16:9にトリミングされます。</p>
+      <p class="hint">2〜10枚の画像をアップロードしてください。各画像は自動で16:9にトリミングされます。サムネイルの「⠿」をドラッグすると並び順を変更できます。</p>
 
       <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="画像をドロップまたはクリックして選択">
         <p>ここに画像をドラッグ&ドロップ<br>またはクリックして選択</p>
@@ -43,7 +43,7 @@
 
       <div class="field-row">
         <div class="field">
-          <label for="overlay-color">オーバーレイ色</label>
+          <label for="overlay-color">文字の下地の色</label>
           <input type="color" id="overlay-color" value="#1a1030">
         </div>
         <div class="field">
@@ -53,7 +53,7 @@
       </div>
 
       <div class="field">
-        <label for="overlay-opacity">オーバーレイの濃さ <span id="overlay-opacity-value">55%</span></label>
+        <label for="overlay-opacity">文字の下地の濃さ <span id="overlay-opacity-value">55%</span></label>
         <input type="range" id="overlay-opacity" min="0" max="100" value="55">
       </div>
 
@@ -66,6 +66,28 @@
           <option value="Noto Serif JP">クラシック明朝（Noto Serif JP）</option>
           <option value="Reggae One">ポップ（Reggae One）</option>
           <option value="Dela Gothic One">インパクト（Dela Gothic One）</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="transition-select">画像の切り替えアニメーション</label>
+        <select id="transition-select">
+          <option value="fade" selected>フェード（定番）</option>
+          <option value="slide">スライド（スタイリッシュ）</option>
+          <option value="wipe">ワイプ（シャープ）</option>
+          <option value="zoom">ズーム（ダイナミック）</option>
+          <option value="flip">フリップ（かっこいい）</option>
+          <option value="iris">アイリス（まるくキュート）</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="text-anim-select">文字の出現・消え方</label>
+        <select id="text-anim-select">
+          <option value="fade" selected>フェード</option>
+          <option value="slide">スライドイン</option>
+          <option value="pop">ポップ（ふわっと拡大）</option>
+          <option value="blur">ブラー（じわっと）</option>
         </select>
       </div>
     </section>
@@ -100,6 +122,7 @@
 
 <footer class="site-footer">
   <p>すべての処理はブラウザ内で完結します。画像がサーバーに送信されることはありません。</p>
+  <p class="copyright">©Pisorium ©MigiteniEdamame ©SQUARE ENIX ©FINAL FANTASY XIV</p>
 </footer>
 
 <script src="js/vendor/gif.js"></script>

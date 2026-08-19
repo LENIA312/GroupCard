@@ -10,6 +10,8 @@ const state = {
     overlayOpacity: 0.55,
     textColor: '#f4e7c9',
     fontFamily: 'M PLUS Rounded 1c',
+    transitionType: 'fade',
+    textAnimStyle: 'fade',
   },
 };
 
@@ -27,6 +29,8 @@ const overlayOpacityInput = document.getElementById('overlay-opacity');
 const overlayOpacityValue = document.getElementById('overlay-opacity-value');
 const textColorInput = document.getElementById('text-color');
 const fontSelect = document.getElementById('font-select');
+const transitionSelect = document.getElementById('transition-select');
+const textAnimSelect = document.getElementById('text-anim-select');
 
 const previewCanvas = document.getElementById('preview-canvas');
 const previewCtx = previewCanvas.getContext('2d');
@@ -53,10 +57,18 @@ function renderThumbnails() {
   state.images.forEach((entry, index) => {
     const li = document.createElement('li');
     li.className = 'image-item';
+    li.dataset.id = String(entry.id);
 
     const thumb = document.createElement('img');
     thumb.src = entry.url;
     thumb.alt = `画像 ${index + 1}`;
+    thumb.draggable = false;
+
+    const handle = document.createElement('button');
+    handle.type = 'button';
+    handle.className = 'drag-handle';
+    handle.textContent = '⠿';
+    handle.setAttribute('aria-label', '並び替え（ドラッグ）');
 
     const controls = document.createElement('div');
     controls.className = 'image-item-controls';
@@ -80,8 +92,9 @@ function renderThumbnails() {
     removeBtn.addEventListener('click', () => removeImage(entry.id));
 
     controls.append(upBtn, downBtn, removeBtn);
-    li.append(thumb, controls);
+    li.append(thumb, handle, controls);
     imageListEl.appendChild(li);
+    attachDragHandlers(li, handle);
   });
   updateImageCount();
 }
@@ -103,6 +116,46 @@ function removeImage(id) {
   state.images.splice(index, 1);
   renderThumbnails();
   rebuildTimeline();
+}
+
+// Pointer-based drag reorder (works for mouse + touch, unlike native HTML5 DnD).
+let dragState = null;
+
+function attachDragHandlers(li, handle) {
+  handle.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    handle.setPointerCapture(e.pointerId);
+    dragState = { pointerId: e.pointerId };
+    li.classList.add('dragging');
+  });
+
+  handle.addEventListener('pointermove', (e) => {
+    if (!dragState || dragState.pointerId !== e.pointerId) return;
+    const target = document.elementFromPoint(e.clientX, e.clientY);
+    const overLi = target && target.closest('.image-item');
+    if (overLi && overLi !== li && imageListEl.contains(overLi)) {
+      const items = [...imageListEl.children];
+      const fromIndex = items.indexOf(li);
+      const toIndex = items.indexOf(overLi);
+      if (fromIndex < toIndex) {
+        imageListEl.insertBefore(li, overLi.nextSibling);
+      } else {
+        imageListEl.insertBefore(li, overLi);
+      }
+    }
+  });
+
+  const endDrag = (e) => {
+    if (!dragState || dragState.pointerId !== e.pointerId) return;
+    dragState = null;
+    li.classList.remove('dragging');
+    const orderedIds = [...imageListEl.children].map((el) => Number(el.dataset.id));
+    state.images.sort((a, b) => orderedIds.indexOf(a.id) - orderedIds.indexOf(b.id));
+    renderThumbnails();
+    rebuildTimeline();
+  };
+  handle.addEventListener('pointerup', endDrag);
+  handle.addEventListener('pointercancel', endDrag);
 }
 
 function addFiles(fileList) {
@@ -181,6 +234,8 @@ function readSettings() {
   state.settings.overlayOpacity = Number(overlayOpacityInput.value) / 100;
   state.settings.textColor = textColorInput.value;
   state.settings.fontFamily = fontSelect.value;
+  state.settings.transitionType = transitionSelect.value;
+  state.settings.textAnimStyle = textAnimSelect.value;
 }
 
 function rebuildTimeline() {
@@ -188,9 +243,9 @@ function rebuildTimeline() {
     state.segments = [];
     previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
     previewCtx.save();
-    previewCtx.fillStyle = '#2a2140';
+    previewCtx.fillStyle = '#fff0f6';
     previewCtx.fillRect(0, 0, previewCanvas.width, previewCanvas.height);
-    previewCtx.fillStyle = '#9a8fc2';
+    previewCtx.fillStyle = '#d6598c';
     previewCtx.font = '20px sans-serif';
     previewCtx.textAlign = 'center';
     previewCtx.textBaseline = 'middle';
@@ -198,8 +253,7 @@ function rebuildTimeline() {
     previewCtx.restore();
     return;
   }
-  const keyframes = buildKeyframes(state.images.map((e) => e.img), state.settings);
-  state.segments = buildSegments(keyframes);
+  state.segments = buildTimeline(state.images.map((e) => e.img), state.settings);
 }
 
 let debounceHandle = null;
@@ -219,11 +273,13 @@ overlayOpacityInput.addEventListener('input', () => {
   overlayOpacityValue.textContent = `${overlayOpacityInput.value}%`;
   scheduleRebuild();
 });
-fontSelect.addEventListener('change', scheduleRebuild);
+[fontSelect, transitionSelect, textAnimSelect].forEach((el) => {
+  el.addEventListener('change', scheduleRebuild);
+});
 
 function previewLoop(ts) {
   if (state.segments.length > 0) {
-    renderAtTime(previewCtx, state.segments, ts);
+    renderAtTime(previewCtx, state.segments, ts, state.settings);
   }
   requestAnimationFrame(previewLoop);
 }
@@ -248,7 +304,7 @@ generateBtn.addEventListener('click', async () => {
   progressBar.value = 0;
   progressText.textContent = '0%';
 
-  const frames = buildGifFrames(state.segments);
+  const frames = buildGifFrames(state.segments, state.settings);
 
   const gif = new GIF({
     workers: Math.min(4, navigator.hardwareConcurrency || 2),
